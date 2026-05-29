@@ -2,12 +2,12 @@
 
 Sistem Informasi Manajemen Inventaris dan Penjualan untuk toko perlengkapan hewan "Suka Petshop". Proyek ini dikembangkan secara komprehensif untuk memenuhi tugas besar mata kuliah Pemrograman Berorientasi Objek (PBO) dan Manajemen Basis Data, Program Studi Informatika, Universitas Tanjungpura.
 
-## 📝 Deskripsi Proyek
+## Deskripsi Proyek
 Aplikasi ini dirancang untuk mendigitalisasi seluruh proses operasional pada Suka Petshop, mulai dari pengelolaan stok barang hingga pencatatan transaksi penjualan secara akurat dan efisien. Fokus utama dari pengembangan ini adalah penerapan arsitektur web yang terstruktur, pemisahan hak akses keamanan, serta pemeliharaan integritas dan konsistensi data pada sistem basis data relasional menggunakan MySQL.
 
 ---
 
-## ✨ Fitur Utama & Pembaruan Sistem
+## Fitur Utama & Pembaruan Sistem
 Sistem ini telah diperbarui dengan fungsionalitas tingkat lanjut (*advanced features*) untuk memenuhi kebutuhan operasional toko yang nyata:
 
 * **Autentikasi Multi-User (Role-Based Access Control):** Sistem memisahkan hak akses menjadi dua peran utama dengan proteksi menu yang ketat:
@@ -24,7 +24,7 @@ Sistem ini telah diperbarui dengan fungsionalitas tingkat lanjut (*advanced feat
 
 ---
 
-## 📂 Struktur Folder Proyek
+## Struktur Folder Proyek
 Proyek ini mengadopsi struktur pengelompokan berkas yang rapi untuk memisahkan logika pemrosesan dan tampilan antarmuka:
 
 * **`/config`**: Berisi file konfigurasi global dan inisialisasi koneksi basis data PDO (`database.php`).
@@ -34,7 +34,7 @@ Proyek ini mengadopsi struktur pengelompokan berkas yang rapi untuk memisahkan l
 
 ---
 
-## 🚀 Instruksi Instalasi & Konfigurasi Lokal
+## Instruksi Instalasi & Konfigurasi Lokal
 Ikuti langkah-langkah berikut untuk menjalankan aplikasi Suka Petshop pada lingkungan server lokal (*localhost*):
 
 1.  **Persiapan Lingkungan:** Pastikan aplikasi **XAMPP** (atau aplikasi web server sejenis) telah terpasang di komputer.
@@ -51,7 +51,7 @@ Ikuti langkah-langkah berikut untuk menjalankan aplikasi Suka Petshop pada lingk
 
 ---
 
-## 👥 Tim Pengembang (Kelompok 6)
+## Tim Pengembang (Kelompok 6)
 Proyek ini disusun dan diselesaikan oleh Mahasiswa Program Studi Informatika, Universitas Tanjungpura:
 * **Dhyanesa Amirah Kanandhi** (NIM: D1041241011)
 * **Dwi Nayla Cintia** (NIM: D1041241017)
