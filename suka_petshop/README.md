@@ -13,7 +13,7 @@ Sistem ini telah diperbarui dengan fungsionalitas tingkat lanjut (*advanced feat
 * **Autentikasi Multi-User (Role-Based Access Control):** Sistem memisahkan hak akses menjadi dua peran utama dengan proteksi menu yang ketat:
     * **Owner:** Memiliki kendali penuh atas manajemen produk (CRUD), kategori barang (CRUD), data petugas kasir (CRUD), serta pemantauan riwayat log transaksi beserta rincian detail nota belanja.
     * **Kasir:** Memiliki hak akses operasional terbatas untuk melihat daftar produk/kategori (*read-only*) tanpa tombol manipulasi data, memproses transaksi baru, serta melihat riwayat log nota belanja beserta detailnya untuk verifikasi pelanggan. Menu pengelolaan kasir diblokir sepenuhnya bagi peran ini.
-* **Dasbor Ringkasan Statistik:** Menyediakan visualisasi pemantauan aset secara *real-time* di bagian atas halaman panel menggunakan fungsi agregat SQL untuk menghitung Total Inventaris Produk, Estimasi Nilai Jual Aset, dan Indikator Otomatis Produk dengan Stok Kritis (di bawah 10 unit).
+* **Dasbor Ringkasan Statistik:** Menyediakan visualisasi pemantauan aset secara *real-time* di bagian atas halaman panel menggunakan fungsi agregat SQL untuk menghitung Total Inventaris Produk, Estimasi Nilai Jual Aset, dan Indikator Otomatis Produk dengan Stok Kritis Food Product (di bawah 10 unit), Stok Kritis Non-Food Product (di bawah 4 unit), dan Stok Kosong (berjumalh 0 unit).
 * **Terminal POS & Keranjang Belanja Multi-Item:** Form transaksi baru kini mendukung input banyak barang sekaligus dalam satu nota penjualan (*shopping cart* berbasis JavaScript Array). Sistem secara otomatis mengkalkulasi subtotal dan memvalidasi kuantitas agar tidak melebihi sisa stok fisik yang tersedia.
 * **Multi-Metode Pembayaran:** Pencatatan jalur pembayaran yang fleksibel untuk memfasilitasi transaksi non-tunai maupun tunai, mencakup opsi **Cash**, **QRIS**, dan **Kartu Kredit**.
 * **Otomatisasi Penomoran Sekuensial Konten:** Sistem secara dinamis mencari data terakhir di dalam basis data untuk menyusun ID secara urut dan otomatis:
@@ -44,7 +44,7 @@ Ikuti langkah-langkah berikut untuk menjalankan aplikasi Suka Petshop pada lingk
 4.  **Konfigurasi Basis Data (phpMyAdmin):**
     * Buka peramban (*browser*) dan akses alamat: `http://localhost/phpmyadmin/`
     * Buat sebuah basis data baru dengan nama: `suka_petshop`
-    * Pilih nama basis data tersebut, masuk ke tab **Import**, pilih file struktur SQL database yang tersedia di folder proyek, kemudian klik **Go/Import**.
+    * Pilih nama basis data tersebut, masuk ke tab **Import**, pilih file struktur SQL database yang tersedia di folder proyek ini (catsthopdb.sql), kemudian klik **Go/Import**.
 5.  **Verifikasi Kredensial Database:** Buka berkas `config/database.php` menggunakan teks editor dan pastikan konfigurasi host, nama database, dan user host lokal telah sesuai dengan konfigurasi XAMPP standar (User: `root`, Password: `""`).
 6.  **Menjalankan Aplikasi:** Buka peramban dan akses alamat tautan berikut untuk menuju halaman autentikasi:  
     `http://localhost/suka_petshop/public/login.php`
