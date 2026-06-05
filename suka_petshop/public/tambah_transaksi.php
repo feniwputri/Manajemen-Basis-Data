@@ -48,7 +48,8 @@ try {
                     <input list="data_produk" id="input_produk" class="form-control bg-light" placeholder="Pilih produk...">
                     <datalist id="data_produk">
                         <?php foreach($produk_list as $p): ?>
-                            <option value="<?= $p['id_produk'] ?>"><?= htmlspecialchars($p['nama_produk']) ?> | Rp<?= $p['harga_jual'] ?> | Stok:<?= $p['stok_tersedia'] ?></option>
+                            <!-- OPTIMASI DATASET: Menyimpan nama produk secara tersembunyi via data-nama -->
+                            <option value="<?= $p['id_produk'] ?>" data-nama="<?= htmlspecialchars($p['nama_produk']) ?>"><?= htmlspecialchars($p['nama_produk']) ?> | Rp<?= number_format($p['harga_jual'], 0, ',', '.') ?> | Stok:<?= $p['stok_tersedia'] ?></option>
                         <?php endforeach; ?>
                     </datalist>
                 </div>
@@ -72,7 +73,14 @@ try {
                 
                 <div class="table-responsive mb-3" style="max-height: 250px; overflow-y: auto;">
                     <table class="table align-middle">
-                        <thead class="table-light"><tr><th class="small text-secondary">ID ITEM</th><th class="small text-secondary">JUMLAH</th><th class="small text-secondary text-end">AKSI</th></tr></thead>
+                        <thead class="table-light">
+                            <tr>
+                                <th class="small text-secondary">ID ITEM</th>
+                                <th class="small text-secondary">NAMA PRODUK</th> <!-- KOLOM BARU -->
+                                <th class="small text-secondary">JUMLAH</th>
+                                <th class="small text-secondary text-end">AKSI</th>
+                            </tr>
+                        </thead>
                         <tbody id="cart_body"></tbody>
                     </table>
                 </div>
@@ -112,13 +120,28 @@ try {
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     let cart = []; 
+    
     function tambahKeKeranjang() {
         const idProd = document.getElementById('input_produk').value.trim();
         const qty = parseInt(document.getElementById('input_qty').value);
         if (!idProd || isNaN(qty) || qty <= 0) return;
 
+        // Mencari elemen option yang dipilih kasir di dalam datalist untuk mengambil teks nama_produk
+        const option = document.querySelector(`#data_produk option[value="${idProd}"]`);
+        if (!option) {
+            Swal.fire({ icon: 'error', title: 'Produk Tidak Valid!', text: 'Pastikan memilih kode produk resmi yang terdaftar di sistem katalog toko!', confirmButtonColor: '#ff75c3' });
+            return;
+        }
+        
+        // Mengambil atribut data-nama yang sudah ditanam di elemen HTML option atas
+        const namaProd = option.getAttribute('data-nama');
+
         const existing = cart.find(item => item.id === idProd);
-        if (existing) { existing.qty += qty; } else { cart.push({ id: idProd, qty: qty }); }
+        if (existing) { 
+            existing.qty += qty; 
+        } else { 
+            cart.push({ id: idProd, nama: namaProd, qty: qty }); 
+        }
         
         renderCart();
         document.getElementById('input_produk').value = '';
@@ -134,13 +157,19 @@ try {
         tbody.innerHTML = ''; hiddenArea.innerHTML = '';
         
         if (cart.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-muted small">Keranjang belanja masih kosong</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted small">Keranjang belanja masih kosong</td></tr>';
             btnSubmit.disabled = true; return;
         }
         
         btnSubmit.disabled = false;
         cart.forEach((item, index) => {
-            tbody.innerHTML += `<tr><td class="fw-bold text-primary">${item.id}</td><td>${item.qty} Pcs</td><td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="hapusItem(${index})">Hapus</button></td></tr>`;
+            // MENAMPILKAN ID DAN NAMA BARANG DI DALAM STRUKTUR BARIS TABEL VISUAL
+            tbody.innerHTML += `<tr>
+                <td class="fw-bold text-primary"><code>${item.id}</code></td>
+                <td class="fw-semibold text-dark">${item.nama}</td>
+                <td>${item.qty} Pcs</td>
+                <td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="hapusItem(${index})">Hapus</button></td>
+            </tr>`;
             hiddenArea.innerHTML += `<input type="hidden" name="id_produk[]" value="${item.id}"><input type="hidden" name="kuantitas[]" value="${item.qty}">`;
         });
     }
@@ -153,7 +182,7 @@ try {
             if (data.status === 'success') {
                 Swal.fire({ icon: 'success', title: 'Berhasil!', text: data.msg, confirmButtonColor: '#ff75c3' }).then(() => { window.location.href = 'index.php?page=transaksi'; });
             } else {
-                Swal.fire({ icon: 'error', title: 'Gagal!', text: data.msg, confirmButtonColor: '#ff75c3' });
+                Swal.fire({ icon: 'error', title: 'Gagal Checkout!', text: data.msg, confirmButtonColor: '#ff75c3' });
             }
         });
     });

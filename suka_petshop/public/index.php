@@ -2,6 +2,7 @@
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 if (!isset($_SESSION['role'])) { header("Location: login.php"); exit(); }
 
+// Menghubungkan ke file database dengan aman keluar satu folder dari public/
 require_once '../config/database.php';
 $role = $_SESSION['role'];
 $page = isset($_GET['page']) ? $_GET['page'] : 'produk';
@@ -15,7 +16,33 @@ if ($role === 'kasir' && $page === 'kasir') {
 try {
     $total_produk = $conn->query("SELECT COUNT(*) as total FROM Produk")->fetch()['total'] ?? 0;
     $estimasi_nilai = $conn->query("SELECT SUM(harga_jual * stok_tersedia) as total_val FROM Produk")->fetch()['total_val'] ?? 0;
-    $stok_hampir_habis = $conn->query("SELECT COUNT(*) as total FROM Produk WHERE stok_tersedia < 10")->fetch()['total'] ?? 0;
+    
+    // =========================================================================
+    // 1. HITUNG STOK KRITIS BARANG NON-FOOD (Kategori 'KAT-004', 'KAT-008', 'KAT-009' < 4)
+    // =========================================================================
+    $kritis_perlengkapan = $conn->query("
+        SELECT COUNT(*) as total 
+        FROM Produk 
+        WHERE id_kategori IN ('KAT-004', 'KAT-008', 'KAT-009') AND stok_tersedia < 4 AND stok_tersedia > 0
+    ")->fetch()['total'] ?? 0;
+
+    // =========================================================================
+    // 2. HITUNG STOK KRITIS BARANG FOOD/LAIN (Selain kategori non-food dan < 10)
+    // =========================================================================
+    $kritis_barang_lain = $conn->query("
+        SELECT COUNT(*) as total 
+        FROM Produk 
+        WHERE id_kategori NOT IN ('04', '08', '09', '004', '008', '009', 'KAT-004', 'KAT-008', 'KAT-009') AND stok_tersedia < 10 AND stok_tersedia > 0
+    ")->fetch()['total'] ?? 0;
+
+    // =========================================================================
+    // 3. HITUNG STOK KOSONG / HABIS MURNI (= 0)
+    // =========================================================================
+    $stok_kosong = $conn->query("
+        SELECT COUNT(*) as total 
+        FROM Produk 
+        WHERE stok_tersedia = 0
+    ")->fetch()['total'] ?? 0;
 
     if ($page == 'produk') {
         $data_view = $conn->query("SELECT p.*, k.nama_kategori FROM Produk p LEFT JOIN Kategori k ON p.id_kategori = k.id_kategori")->fetchAll(PDO::FETCH_ASSOC);
@@ -26,7 +53,6 @@ try {
     } elseif ($page == 'transaksi') {
         $data_view = $conn->query("SELECT t.*, k.nama_kasir FROM transaksi t LEFT JOIN Kasir k ON t.id_kasir = k.id_kasir ORDER BY t.tanggal_waktu DESC")->fetchAll(PDO::FETCH_ASSOC);
     } elseif ($page == 'detail_transaksi') {
-        // FITUR BARU: Filter berdasarkan ID Transaksi jika tombol "Lihat Detail" diklik
         $id_trx_filter = $_GET['id_trx'] ?? '';
         if ($id_trx_filter) {
             $stmt = $conn->prepare("SELECT dt.*, p.nama_produk FROM detail_transaksi dt LEFT JOIN Produk p ON dt.id_produk = p.id_produk WHERE dt.id_transaksi = ? ORDER BY dt.id_detail_transaksi ASC");
@@ -53,15 +79,31 @@ try {
         body { background-color: #fff1f2; font-family: 'Plus Jakarta Sans', sans-serif; height: 100vh; overflow: hidden; }
         .app-wrapper { display: flex; height: 100vh; width: 100vw; }
         .sidebar-left { width: 260px; background: linear-gradient(180deg, #ff75c3 0%, #b18cf0 60%, #79e3f7 100%); color: white; display: flex; flex-direction: column; padding: 24px 16px; flex-shrink: 0; }
+        
+        /* FIX CSS SIDEBAR BRAND: Memberi tata letak flex yang rapi dengan pembatas block baris baru */
         .sidebar-brand { font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 10px; margin-bottom: 32px; }
-        .sidebar-brand span { font-size: 0.85rem; display: block; opacity: 0.8; font-weight: 400; }
+        .sidebar-brand span { font-size: 0.85rem; display: block; opacity: 0.8; font-weight: 400; margin-top: 2px; }
+        
         .nav-menu-container { display: flex; flex-direction: column; gap: 6px; flex-grow: 1; }
         .nav-link-custom { display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: rgba(255, 255, 255, 0.9); text-decoration: none; border-radius: 14px; font-weight: 600; transition: 0.2s; }
         .nav-link-custom:hover, .nav-link-custom.active { background-color: white; color: #ff75c3; box-shadow: 0 4px 12px rgba(255, 117, 195, 0.15); }
         .content-right-area { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
         .top-bar-header { background-color: white; padding: 16px 32px; border-bottom: 1px solid #ffe4e6; display: flex; justify-content: space-between; align-items: center; }
         .scrollable-inner-content { padding: 32px; overflow-y: auto; flex-grow: 1; }
-        .summary-card { background: white; border: none; border-radius: 16px; padding: 20px; border-left: 5px solid #ff75c3; }
+        
+        .summary-card { 
+            background: white; 
+            border: none; 
+            border-radius: 16px; 
+            padding: 16px; 
+            border-left: 5px solid #ff75c3; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 105px;
+        }
+        
         .main-data-card { background: white; border-radius: 20px; padding: 28px; box-shadow: 0 6px 20px rgba(0,0,0,0.01); }
         .btn-add-custom { background: linear-gradient(135deg, #ff75c3 0%, #b18cf0 100%); color: white; font-weight: 600; border: none; padding: 8px 20px; border-radius: 24px; text-decoration: none; }
         .table th { font-weight: 600; color: #a3b2c2; font-size: 0.85rem; text-transform: uppercase; border-bottom: 2px solid #fff1f2; }
@@ -72,7 +114,14 @@ try {
 
 <div class="app-wrapper">
     <div class="sidebar-left">
-        <div class="sidebar-brand"><i class="bi bi-paw-fill fs-3"></i><div>Suka Petshop<span>Panel <?= ucfirst($role) ?></span></div></div>
+        <!-- FIX BRAND TEXT: Menggunakan kontainer div pembatas agar tulisan tidak menyatu kesamping -->
+        <div class="sidebar-brand">
+            <i class="bi bi-paw-fill fs-3"></i>
+            <div>
+                Suka Petshop
+                <span>Panel <?= ucfirst($role) ?></span>
+            </div>
+        </div>
         <div class="nav-menu-container">
             <a href="index.php?page=produk" class="nav-link-custom <?= $page == 'produk' ? 'active' : '' ?>"><i class="bi bi-box-seam-fill"></i> Daftar Produk</a>
             <a href="index.php?page=kategori" class="nav-link-custom <?= $page == 'kategori' ? 'active' : '' ?>"><i class="bi bi-collection-fill"></i> Kategori Barang</a>
@@ -93,9 +142,11 @@ try {
         
         <div class="scrollable-inner-content">
             <div class="row g-3 mb-4">
-                <div class="col-md-4"><div class="summary-card"><span class="text-muted small d-block mb-1">Total Inventaris</span><h4 class="fw-bold m-0"><?= $total_produk ?> Produk</h4></div></div>
-                <div class="col-md-4"><div class="summary-card" style="border-color:#79e3f7;"><span class="text-muted small d-block mb-1">Estimasi Nilai Jual</span><h4 class="fw-bold m-0">Rp <?= number_format($estimasi_nilai, 0, ',', '.') ?></h4></div></div>
-                <div class="col-md-4"><div class="summary-card" style="border-color:#ffa64d;"><span class="text-muted small d-block mb-1">Stok Hampir Habis</span><h4 class="fw-bold text-danger m-0"><?= $stok_hampir_habis ?> Produk</h4></div></div>
+                <div class="col" style="width: 20%;"><div class="summary-card"><span class="text-muted small d-block mb-1">Total Barang</span><h5 class="fw-bold m-0"><?= $total_produk ?> Item</h5></div></div>
+                <div class="col" style="width: 20%;"><div class="summary-card" style="border-color:#79e3f7;"><span class="text-muted small d-block mb-1">Estimasi Nilai Jual</span><h5 class="fw-bold m-0" style="font-size:1rem;">Rp <?= number_format($estimasi_nilai, 0, ',', '.') ?></h5></div></div>
+                <div class="col" style="width: 20%;"><div class="summary-card" style="border-color:#b18cf0;"><span class="text-muted small d-block mb-1">Stok Hampir Habis (Aksesoris/Non-Food) (&lt;4)</span><h5 class="fw-bold m-0" style="color:#b18cf0;"><?= $kritis_perlengkapan ?> Item</h5></div></div>
+                <div class="col" style="width: 20%;"><div class="summary-card" style="border-color:#ffa64d;"><span class="text-muted small d-block mb-1">Stok Hampir Habis (Food Product) (&lt;10)</span><h5 class="fw-bold text-warning m-0"><?= $kritis_barang_lain ?> Item</h5></div></div>
+                <div class="col" style="width: 20%;"><div class="summary-card" style="border-color:#dc3545;"><span class="text-muted small d-block mb-1">Stok Kosong</span><h5 class="fw-bold text-danger m-0"><?= $stok_kosong ?> Item</h5></div></div>
             </div>
 
             <div class="main-data-card">
@@ -105,7 +156,8 @@ try {
                         <?php if ($role == 'owner'): ?><a href="tambah.php" class="btn btn-add-custom">+ Tambah Produk</a><?php endif; ?>
                     </div>
                     <table class="table align-middle">
-                        <thead><tr><th>ID</th><th>Foto</th><th>Nama</th><th>Kategori</th><th>Harga</th><th>Stok</th><?php if($role=='owner') echo "<th>Aksi</th>";?></tr></thead>
+                        <!-- FIX HEADER TABEL: Kolom AKSI hanya dimunculkan murni jika yang login adalah owner -->
+                        <thead><tr><th>ID</th><th>Foto</th><th>Nama</th><th>Kategori</th><th>Harga</th><th>Stok</th><?php if($role == 'owner') echo "<th>Aksi</th>"; ?></tr></thead>
                         <tbody>
                             <?php foreach($data_view as $row): ?>
                             <tr>
@@ -120,11 +172,27 @@ try {
                                 <td class="fw-bold"><?= htmlspecialchars($row['nama_produk']) ?></td>
                                 <td><span class="badge bg-light text-dark"><?= htmlspecialchars($row['nama_kategori'] ?? 'Umum') ?></span></td>
                                 <td>Rp <?= number_format($row['harga_jual'], 0, ',', '.') ?></td>
-                                <td><span class="badge <?= $row['stok_tersedia'] < 10 ? 'bg-danger' : 'bg-success' ?>"><?= $row['stok_tersedia'] ?></span></td>
+                                <td>
+                                    <?php 
+                                    if ($row['stok_tersedia'] == 0) {
+                                        $badge_color = 'bg-dark'; 
+                                    } else {
+                                        $limit_kritis = in_array($row['id_kategori'], ['KAT-004', 'KAT-008', 'KAT-009']) ? 4 : 10;
+
+                                        if ($row['stok_tersedia'] < $limit_kritis) {
+                                            $badge_color = 'bg-danger'; 
+                                        } else {
+                                            $badge_color = 'bg-success'; 
+                                        }
+                                    }
+                                    ?>
+                                    <span class="badge <?= $badge_color ?>"><?= $row['stok_tersedia'] == 0 ? 'HABIS' : $row['stok_tersedia'] ?></span>
+                                </td>
+                                <!-- FIX BARIS DATA: Tombol aksi murni hilang total tanpa teks pengunci gantung jika login kasir -->
                                 <?php if ($role == 'owner'): ?>
                                 <td>
                                     <a href="edit.php?id=<?= urlencode($row['id_produk']) ?>" class="btn btn-sm btn-outline-primary rounded-pill px-3">Edit</a>
-                                    <a href="../process/delete.php?id=<?= urlencode($row['id_produk']) ?>" class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="return confirm('Hapus?')">Hapus</a>
+                                    <button onclick="konfirmasiHapus('<?= $row['id_produk'] ?>')" class="btn btn-sm btn-outline-danger rounded-pill px-3">Hapus</button>
                                 </td>
                                 <?php endif; ?>
                             </tr>
@@ -234,6 +302,22 @@ try {
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+    function konfirmasiHapus(id) {
+        Swal.fire({
+            title: 'Apakah anda yakin?',
+            text: "Data produk " + id + " akan terhapus permanen dari sistem!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ff75c3',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Ya, Hapus!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = '../process/delete.php?id=' + encodeURIComponent(id);
+            }
+        });
+    }
+
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('status') === 'success') { Swal.fire({ icon: 'success', title: 'Berhasil!', text: urlParams.get('msg'), confirmButtonColor: '#ff75c3' }); } 
     else if (urlParams.get('status') === 'error') { Swal.fire({ icon: 'error', title: 'Gagal!', text: urlParams.get('msg'), confirmButtonColor: '#ff75c3' }); }
